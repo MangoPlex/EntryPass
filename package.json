@@ -10,5 +10,8 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "simple-js-ec-math": "^2.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.4.3"
   }
 }

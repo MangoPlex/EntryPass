@@ -1,0 +1,14 @@
+{
+  "name": "@mangoplex/entrypass",
+  "version": "0.0.1",
+  "description": "Entry pass protocol",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "node dist/test.js"
+  },
+  "author": "nahkd123",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "simple-js-ec-math": "^2.0.1"
+  }
+}

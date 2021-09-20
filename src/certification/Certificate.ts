@@ -102,16 +102,28 @@ export class Certificate {
 
     get hash() { return new SHAModified().hash(this.binaryWithoutSignature); }
 
+    get hasSignature() { return this.signature[0] != 0n && this.signature[1] != 0n; }
+
+    /**
+     * Sign this certificate. If this certificate does not have parent, this function fill perform
+     * self sign
+     * @param key The key
+     * @param rnd Randomizer
+     */
     signCertificate(key: Key, rnd: Randomizer) {
-        if (this.parent == null) throw new Error("cannot sign root; add root cerificate to trusted roots instead (on verifier's device)");
-        if (!Key.comparePublic(this.parent.keyObject, key)) throw new Error("provided public key does not match with parent certificate public key");
         let hash = this.hash;
+        if (this.parent == null) {
+            if (!Key.comparePublic(key, this.keyObject)) throw new Error("provided public key does not match with this certificate");
+        }
+        else if (!Key.comparePublic(this.parent.keyObject, key)) throw new Error("provided public key does not match with parent certificate public key");
         this.signature = key.sign(hash, rnd.randomBigInteger(64));
     }
 
     verify(): CertificateVerifyResponse {
         if (Date.now() > this.expireOn) return { success: false, reason: `Certificate '${this.name}': Expired` };
+        if (!this.hasSignature) return { success: false, reason: `Certificate '${this.name}': No signature` };
 
+        let hash = this.hash;
         if (this.parent) {
             if (this.expireOn > this.parent.expireOn) return { success: false, reason: `Certificate '${this.name}': This certificate has longer lifetime than parent certificate` }
             let parentVerify = this.parent.verify();
@@ -119,16 +131,21 @@ export class Certificate {
             if (!this.parent.canSignCertificate) return { success: false, reason: `Certificate '${this.parent.name}': No permission to sign other certificates` };
             if (!this.verifyUseCases) return { success: false, reason: `Certificate '${this.name}': Permissions inheritance check failed` };
 
-            let key = Key.uncompressPublic(...this.parent.publicKey);
-            let hash = this.hash;
+            let key = this.parent.keyObject;
             try {
                 let success = key.verify(hash, this.signature);
                 return { success, reason: success? `Certificate '${this.name}': Signature valid` : `Certificate '${this.name}': Signature invalid` }
             } catch (e) {
                 return { success: false, reason: `Error occured while verifying signature: ` + e.message };
             }
+        } else {
+            try {
+                let success = this.keyObject.verify(hash, this.signature);
+                return { success, reason: success? `Certificate '${this.name}': Root Certificate Signature valid` : `Certificate '${this.name}': Root Certificate Signature invalid` }
+            } catch (e) {
+                return { success: false, reason: `Error occured while verifying signature: ` + e.message };
+            }
         }
-        return { success: true, reason: `Certificate '${this.name}': Root Certificate` };
     }
 
     get verifyUseCases() {

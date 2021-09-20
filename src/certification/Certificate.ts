@@ -150,6 +150,14 @@ export class Certificate {
         };
     }
 
+    get rootCertificate() {
+        if (this.parent == null) return this;
+        return this.parent.rootCertificate;
+    }
+
+    /** Quickly compare 2 certificates using SHAModified hash */
+    static quickCompare(a: Certificate, b: Certificate) { return a.json == b.hash; }
+
 }
 
 export interface CertificateJSON {

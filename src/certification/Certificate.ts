@@ -150,7 +150,7 @@ export class Certificate {
         };
     }
 
-    get rootCertificate() {
+    get rootCertificate(): Certificate {
         if (this.parent == null) return this;
         return this.parent.rootCertificate;
     }
